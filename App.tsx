@@ -1,8 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Audio } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   Pressable,
@@ -535,7 +534,6 @@ export default function App() {
   const [hydrated, setHydrated] = useState(false);
   const [restEndsAt, setRestEndsAt] = useState<number | null>(null);
   const [restSecondsLeft, setRestSecondsLeft] = useState(0);
-  const soundRef = useRef<Audio.Sound | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -562,18 +560,10 @@ export default function App() {
       }
     }
 
-    void Audio.setAudioModeAsync({
-      playsInSilentModeIOS: true,
-      shouldDuckAndroid: true,
-    });
     void hydrateState();
 
     return () => {
       isMounted = false;
-
-      if (soundRef.current) {
-        void soundRef.current.unloadAsync();
-      }
     };
   }, []);
 
@@ -585,19 +575,6 @@ export default function App() {
     const state: StoredState = { sessions };
     void AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [hydrated, sessions]);
-
-  async function playRestDone() {
-    try {
-      if (!soundRef.current) {
-        const created = await Audio.Sound.createAsync(require('./assets/rest-done.wav'));
-        soundRef.current = created.sound;
-      }
-
-      await soundRef.current.replayAsync();
-    } catch {
-      Vibration.vibrate(220);
-    }
-  }
 
   useEffect(() => {
     if (!restEndsAt) {
@@ -612,7 +589,6 @@ export default function App() {
       if (seconds <= 0) {
         setRestEndsAt(null);
         Vibration.vibrate(220);
-        void playRestDone();
       }
     };
 
